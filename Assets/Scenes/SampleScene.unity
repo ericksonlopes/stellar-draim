@@ -513,7 +513,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 6.7264, y: -43}
+  m_AnchoredPosition: {x: 7.4528, y: -50}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &328756976
@@ -1124,7 +1124,6 @@ GameObject:
   - component: {fileID: 1516318308}
   - component: {fileID: 1516318307}
   - component: {fileID: 1516318309}
-  - component: {fileID: 1516318310}
   m_Layer: 5
   m_Name: ToolBar
   m_TagString: Untagged
@@ -1218,18 +1217,6 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
---- !u!114 &1516318310
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1516318305}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f7d782b39525a814f91a4c3638b08a7d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DragByShip
 --- !u!1 &1517702831
 GameObject:
   m_ObjectHideFlags: 0
@@ -1583,7 +1570,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ScreenBoundaryManager
   shipTransform: {fileID: 1012771024}
   uiParent: {fileID: 258498509}
-  uiOffsetY: 80
+  uiOffsetY: 130
   flipThreshold: 0.35
 --- !u!4 &1811255773
 Transform:

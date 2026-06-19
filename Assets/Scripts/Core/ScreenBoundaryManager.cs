@@ -7,66 +7,52 @@ public class ScreenBoundaryManager : MonoBehaviour
     public RectTransform uiParent;
 
     [Header("Posição da UI")]
-    [Tooltip("Distância da UI abaixo da nave (valor positivo). Quando inverter, ela vai para cima com a mesma distância.")]
-    public float uiOffsetY = 80f;
+    [Tooltip("Distância da UI abaixo da nave (valor positivo).")]
+    public float uiOffsetY = 130f;
 
-    [Header("Limite para Inverter")]
-    [Tooltip("Quando a nave passar dessa porcentagem da tela (0 = fundo, 1 = topo), inverte.")]
-    [Range(0.1f, 0.5f)]
-    public float flipThreshold = 0.35f;
-
-    private bool isFlipped = false;
     private Camera mainCamera;
+    private Canvas parentCanvas;
+    private RectTransform canvasRect;
 
     void Start()
     {
         mainCamera = Camera.main;
+        if (uiParent != null)
+        {
+            parentCanvas = uiParent.GetComponentInParent<Canvas>();
+            if (parentCanvas != null)
+            {
+                canvasRect = parentCanvas.transform as RectTransform;
+            }
+        }
         // Começa com a UI abaixo da nave
         UpdateUIPosition();
     }
 
-    void Update()
+    void LateUpdate()
     {
-        if (shipTransform == null || mainCamera == null) return;
-
-        // Posição da nave na tela (0 = fundo, 1 = topo)
-        Vector3 viewportPos = mainCamera.WorldToViewportPoint(shipTransform.position);
-
-        bool shouldFlip = viewportPos.y < flipThreshold;
-
-        if (shouldFlip && !isFlipped)
-        {
-            isFlipped = true;
-            ApplyFlip();
-        }
-        else if (!shouldFlip && isFlipped)
-        {
-            isFlipped = false;
-            ApplyFlip();
-        }
-    }
-
-    private void ApplyFlip()
-    {
-        // Inverte a nave de cabeça para baixo
-        if (shipTransform != null)
-        {
-            Vector3 scale = shipTransform.localScale;
-            scale.y = isFlipped ? -Mathf.Abs(scale.y) : Mathf.Abs(scale.y);
-            shipTransform.localScale = scale;
-        }
-
         UpdateUIPosition();
     }
 
     private void UpdateUIPosition()
     {
-        if (uiParent == null) return;
+        if (uiParent == null || shipTransform == null || mainCamera == null || parentCanvas == null || canvasRect == null) return;
 
-        // Normal: UI fica ABAIXO da nave (Y negativo)
-        // Invertido: UI fica ACIMA da nave (Y positivo)
-        float posY = isFlipped ? uiOffsetY : -uiOffsetY;
+        // Posição da nave em coordenadas de tela
+        Vector2 screenPos = mainCamera.WorldToScreenPoint(shipTransform.position);
 
-        uiParent.anchoredPosition = new Vector2(uiParent.anchoredPosition.x, posY);
+        // Conversão para coordenadas locais do Canvas
+        Vector2 localPoint;
+        
+        // O terceiro parâmetro deve ser a câmera se o Canvas não for Overlay
+        Camera cam = (parentCanvas.renderMode == RenderMode.ScreenSpaceOverlay) ? null : mainCamera;
+        
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, cam, out localPoint))
+        {
+            // UI sempre fica ABAIXO da nave (Y negativo)
+            float posY = -uiOffsetY;
+            // Alinha o X com a nave e o Y com o offset correspondente
+            uiParent.anchoredPosition = new Vector2(localPoint.x, localPoint.y + posY);
+        }
     }
 }

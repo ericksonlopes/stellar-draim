@@ -18,6 +18,8 @@ public class ParallaxBackground : MonoBehaviour
 
     void Update()
     {
+        if (Mathf.Approximately(speed, 0f)) return;
+
         // Movimenta para a esquerda e repete quando atinge 'spriteWidth'
         float newPos = Mathf.Repeat(Time.time * speed, spriteWidth);
         transform.position = startPosition + Vector3.left * newPos;
