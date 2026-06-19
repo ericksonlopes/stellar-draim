@@ -11,6 +11,7 @@ public class TransparentWindow : MonoBehaviour
     [DllImport("user32.dll")] private static extern uint GetWindowLong(IntPtr hWnd, int nIndex);
     [DllImport("user32.dll")] private static extern int SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
     [DllImport("user32.dll")] private static extern int SetLayeredWindowAttributes(IntPtr hWnd, uint crKey, byte bAlpha, uint dwFlags);
+    [DllImport("user32.dll")] private static extern int GetSystemMetrics(int nIndex);
     [DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
     [DllImport("user32.dll")] public static extern bool ReleaseCapture();
@@ -29,8 +30,6 @@ public class TransparentWindow : MonoBehaviour
     private const uint LWA_COLORKEY  = 0x00000001;
 
     private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
-    private const uint SWP_NOMOVE       = 0x0002;
-    private const uint SWP_NOSIZE       = 0x0001;
     private const uint SWP_FRAMECHANGED = 0x0020;
     private const uint SWP_SHOWWINDOW   = 0x0040;
 
@@ -38,11 +37,21 @@ public class TransparentWindow : MonoBehaviour
     private const int HTCAPTION         = 0x2;
     private const int SW_SHOW           = 5;
 
+    // Métricas de Tela Virtual
+    private const int SM_XVIRTUALSCREEN = 76;
+    private const int SM_YVIRTUALSCREEN = 77;
+    private const int SM_CXVIRTUALSCREEN = 78;
+    private const int SM_CYVIRTUALSCREEN = 79;
+
     // MAGENTA como cor transparente (mais confiável que preto)
     // COLORREF formato 0x00BBGGRR: Magenta (R=255,G=0,B=255) = 0x00FF00FF
     private const uint TRANSPARENT_COLOR = 0x00FF00FF;
 
     private IntPtr hWnd;
+    private int virtualLeft;
+    private int virtualTop;
+    private int virtualWidth;
+    private int virtualHeight;
 
     void Start()
     {
@@ -51,8 +60,14 @@ public class TransparentWindow : MonoBehaviour
         Camera.main.backgroundColor = new Color(1f, 0f, 1f, 1f); // Magenta puro
         Camera.main.clearFlags = CameraClearFlags.SolidColor;
 
-        // Janela do tamanho do monitor inteiro (fundo transparente, então é invisível)
-        Screen.SetResolution(Screen.currentResolution.width, Screen.currentResolution.height, FullScreenMode.Windowed);
+        // Obtém o tamanho combinado de todas as telas (Virtual Screen)
+        virtualLeft = GetSystemMetrics(SM_XVIRTUALSCREEN);
+        virtualTop = GetSystemMetrics(SM_YVIRTUALSCREEN);
+        virtualWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+        virtualHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
+        // Define a resolução da janela para o tamanho do espaço virtual inteiro
+        Screen.SetResolution(virtualWidth, virtualHeight, FullScreenMode.Windowed);
         Application.runInBackground = true;
 
         StartCoroutine(ApplyTransparencyDelayed());
@@ -95,9 +110,9 @@ public class TransparentWindow : MonoBehaviour
         // 4. Remove borda e barra de título
         SetWindowLong(hWnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
 
-        // 5. Sempre no topo + refresh
-        SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0,
-            SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+        // 5. Sempre no topo + move e redimensiona para cobrir todo o espaço virtual (todos os monitores)
+        SetWindowPos(hWnd, HWND_TOPMOST, virtualLeft, virtualTop, virtualWidth, virtualHeight,
+            SWP_FRAMECHANGED | SWP_SHOWWINDOW);
 
         ShowWindow(hWnd, SW_SHOW);
     }
