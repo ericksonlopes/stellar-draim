@@ -6,7 +6,17 @@ public class EconomyManager : MonoBehaviour
 
     [Header("Recursos")]
     public double currentScrap = 0;
-    public double scrapPerSecond = 1; // PPS inicial
+    
+    [Header("Upgrades")]
+    public double basePPS = 1.0;          // PPS Base da Nave-Mãe
+    public int baseUpgradeLevel = 0;      // Nível do upgrade base
+    public int fleetLevel = 0;            // Nível da Frota (número de naves/sondas)
+    
+    [Header("Configurações de Multiplicador")]
+    public double percentBonusPerFleet = 0.10; // +10% por nave da Frota
+
+    // PPS Total calculado dinamicamente
+    public double scrapPerSecond => basePPS * (1.0 + (fleetLevel * percentBonusPerFleet));
 
     void Awake()
     {
@@ -27,6 +37,41 @@ public class EconomyManager : MonoBehaviour
         currentScrap += scrapPerSecond * Time.deltaTime;
     }
 
+    public double GetBaseUpgradeCost()
+    {
+        return 10 * Mathf.Pow(1.5f, baseUpgradeLevel);
+    }
+
+    public double GetFleetUpgradeCost()
+    {
+        return 50 * Mathf.Pow(1.8f, fleetLevel);
+    }
+
+    public bool BuyBaseUpgrade()
+    {
+        double cost = GetBaseUpgradeCost();
+        if (SpendScrap(cost))
+        {
+            baseUpgradeLevel++;
+            basePPS += 0.5; // Aumenta +0.5 PPS de base
+            SaveData();
+            return true;
+        }
+        return false;
+    }
+
+    public bool BuyFleetUpgrade()
+    {
+        double cost = GetFleetUpgradeCost();
+        if (SpendScrap(cost))
+        {
+            fleetLevel++;
+            SaveData();
+            return true;
+        }
+        return false;
+    }
+
     public bool SpendScrap(double amount)
     {
         if (currentScrap >= amount)
@@ -38,16 +83,12 @@ public class EconomyManager : MonoBehaviour
         return false;
     }
 
-    public void IncreasePPS(double amount)
-    {
-        scrapPerSecond += amount;
-        SaveData();
-    }
-
     public void SaveData()
     {
         PlayerPrefs.SetString("CurrentScrap", currentScrap.ToString("F2"));
-        PlayerPrefs.SetString("ScrapPerSecond", scrapPerSecond.ToString("F2"));
+        PlayerPrefs.SetString("BasePPS", basePPS.ToString("F2"));
+        PlayerPrefs.SetInt("BaseUpgradeLevel", baseUpgradeLevel);
+        PlayerPrefs.SetInt("FleetLevel", fleetLevel);
         PlayerPrefs.Save();
     }
 
@@ -56,8 +97,14 @@ public class EconomyManager : MonoBehaviour
         if (PlayerPrefs.HasKey("CurrentScrap"))
             double.TryParse(PlayerPrefs.GetString("CurrentScrap"), out currentScrap);
 
-        if (PlayerPrefs.HasKey("ScrapPerSecond"))
-            double.TryParse(PlayerPrefs.GetString("ScrapPerSecond"), out scrapPerSecond);
+        if (PlayerPrefs.HasKey("BasePPS"))
+            double.TryParse(PlayerPrefs.GetString("BasePPS"), out basePPS);
+
+        if (PlayerPrefs.HasKey("BaseUpgradeLevel"))
+            baseUpgradeLevel = PlayerPrefs.GetInt("BaseUpgradeLevel", 0);
+
+        if (PlayerPrefs.HasKey("FleetLevel"))
+            fleetLevel = PlayerPrefs.GetInt("FleetLevel", 0);
     }
 
     void OnApplicationQuit()
