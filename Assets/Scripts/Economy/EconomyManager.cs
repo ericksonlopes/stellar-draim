@@ -72,6 +72,14 @@ public class EconomyManager : MonoBehaviour
         Debug.Log("Progresso zerado com sucesso!");
     }
 
+    [ContextMenu("Add 1000 Scrap")]
+    public void AddTestScrap()
+    {
+        currentScrap += 1000;
+        SaveData();
+        Debug.Log("Adicionado 1000 Scrap de teste!");
+    }
+
     // --- CUSTOS DOS UPGRADES ---
     public double GetBaseUpgradeCost() => 15 * Mathf.Pow(1.5f, baseUpgradeLevel);
     public double GetCollectorCost() => 50 * Mathf.Pow(1.8f, collectorCount);
