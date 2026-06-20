@@ -7,16 +7,33 @@ public class EconomyManager : MonoBehaviour
     [Header("Recursos")]
     public double currentScrap = 0;
     
-    [Header("Upgrades")]
+    [Header("Upgrades da Nave Mãe")]
     public double basePPS = 1.0;          // PPS Base da Nave-Mãe
-    public int baseUpgradeLevel = 0;      // Nível do upgrade base
-    public int fleetLevel = 0;            // Nível da Frota (número de naves/sondas)
+    public int baseUpgradeLevel = 0;      // Nível do upgrade base (Warp Drive / Engines)
     
-    [Header("Configurações de Multiplicador")]
-    public double percentBonusPerFleet = 0.10; // +10% por nave da Frota
+    [Header("Upgrades do Collector (Frota)")]
+    public int collectorCount = 0;        // Lvl 1: Quantidade de sondas (+10% por sonda, começa com 1 sonda base no Lvl 0)
+    public int scannerLevel = 0;          // Lvl 2: Scanner Precision (+2% eficiência por sonda)
+    public int thrusterLevel = 0;         // Lvl 3: Thruster Overdrive (+15% velocidade, +5% PPS)
+    public int cargoLevel = 0;            // Lvl 4: Cargo Expansion (+5% eficiência por sonda)
+    public int magnetLevel = 0;           // Lvl 5: Scrap Magnet (-10% tempo coleta, +8% PPS)
+    public int aiLevel = 0;               // Lvl 6: Auto-Pilot AI (+12% PPS)
 
-    // PPS Total calculado dinamicamente
-    public double scrapPerSecond => basePPS * (1.0 + (fleetLevel * percentBonusPerFleet));
+    // PPS Total calculado dinamicamente com base nos 6 upgrades
+    public double scrapPerSecond
+    {
+        get
+        {
+            double baseMultiplier = 1.0;
+            // O número de coletores ativos é collectorCount + 1 (pois já começa com 1)
+            double collectorMultiplier = (collectorCount) * (0.10 + (scannerLevel * 0.02) + (cargoLevel * 0.05));
+            double thrusterMultiplier = thrusterLevel * 0.05;
+            double magnetMultiplier = magnetLevel * 0.08;
+            double aiMultiplier = aiLevel * 0.12;
+
+            return basePPS * (baseMultiplier + collectorMultiplier + thrusterMultiplier + magnetMultiplier + aiMultiplier);
+        }
+    }
 
     void Awake()
     {
@@ -33,39 +50,117 @@ public class EconomyManager : MonoBehaviour
 
     void Update()
     {
-        // Adiciona sucata passivamente de acordo com o tempo
         currentScrap += scrapPerSecond * Time.deltaTime;
     }
 
-    public double GetBaseUpgradeCost()
+    [ContextMenu("Reset Progress")]
+    public void ResetProgress()
     {
-        return 10 * Mathf.Pow(1.5f, baseUpgradeLevel);
+        PlayerPrefs.DeleteAll();
+        
+        currentScrap = 0;
+        basePPS = 1.0;
+        baseUpgradeLevel = 0;
+        collectorCount = 0;
+        scannerLevel = 0;
+        thrusterLevel = 0;
+        cargoLevel = 0;
+        magnetLevel = 0;
+        aiLevel = 0;
+
+        SaveData();
+        Debug.Log("Progresso zerado com sucesso!");
     }
 
-    public double GetFleetUpgradeCost()
-    {
-        return 50 * Mathf.Pow(1.8f, fleetLevel);
-    }
+    // --- CUSTOS DOS UPGRADES ---
+    public double GetBaseUpgradeCost() => 15 * Mathf.Pow(1.5f, baseUpgradeLevel);
+    public double GetCollectorCost() => 50 * Mathf.Pow(1.8f, collectorCount);
+    public double GetScannerCost() => 40 * Mathf.Pow(1.5f, scannerLevel);
+    public double GetThrusterCost() => 60 * Mathf.Pow(1.6f, thrusterLevel);
+    public double GetCargoCost() => 80 * Mathf.Pow(1.7f, cargoLevel);
+    public double GetMagnetCost() => 100 * Mathf.Pow(1.75f, magnetLevel);
+    public double GetAICost() => 150 * Mathf.Pow(1.9f, aiLevel);
 
+    // --- AÇÕES DE COMPRA ---
     public bool BuyBaseUpgrade()
     {
         double cost = GetBaseUpgradeCost();
         if (SpendScrap(cost))
         {
             baseUpgradeLevel++;
-            basePPS += 0.5; // Aumenta +0.5 PPS de base
+            basePPS += 0.5;
             SaveData();
             return true;
         }
         return false;
     }
 
-    public bool BuyFleetUpgrade()
+    public bool BuyCollectorUpgrade()
     {
-        double cost = GetFleetUpgradeCost();
+        double cost = GetCollectorCost();
         if (SpendScrap(cost))
         {
-            fleetLevel++;
+            collectorCount++;
+            SaveData();
+            return true;
+        }
+        return false;
+    }
+
+    public bool BuyScannerUpgrade()
+    {
+        double cost = GetScannerCost();
+        if (SpendScrap(cost))
+        {
+            scannerLevel++;
+            SaveData();
+            return true;
+        }
+        return false;
+    }
+
+    public bool BuyThrusterUpgrade()
+    {
+        double cost = GetThrusterCost();
+        if (SpendScrap(cost))
+        {
+            thrusterLevel++;
+            SaveData();
+            return true;
+        }
+        return false;
+    }
+
+    public bool BuyCargoUpgrade()
+    {
+        double cost = GetCargoCost();
+        if (SpendScrap(cost))
+        {
+            cargoLevel++;
+            SaveData();
+            return true;
+        }
+        return false;
+    }
+
+    public bool BuyMagnetUpgrade()
+    {
+        double cost = GetMagnetCost();
+        if (SpendScrap(cost))
+        {
+            magnetLevel++;
+            SaveData();
+            return true;
+        }
+        return false;
+    }
+
+    public bool BuyAIUpgrade()
+    {
+        double cost = GetAICost();
+        if (SpendScrap(cost))
+        {
+            aiLevel++;
             SaveData();
             return true;
         }
@@ -88,7 +183,13 @@ public class EconomyManager : MonoBehaviour
         PlayerPrefs.SetString("CurrentScrap", currentScrap.ToString("F2"));
         PlayerPrefs.SetString("BasePPS", basePPS.ToString("F2"));
         PlayerPrefs.SetInt("BaseUpgradeLevel", baseUpgradeLevel);
-        PlayerPrefs.SetInt("FleetLevel", fleetLevel);
+        
+        PlayerPrefs.SetInt("CollectorCount", collectorCount);
+        PlayerPrefs.SetInt("ScannerLevel", scannerLevel);
+        PlayerPrefs.SetInt("ThrusterLevel", thrusterLevel);
+        PlayerPrefs.SetInt("CargoLevel", cargoLevel);
+        PlayerPrefs.SetInt("MagnetLevel", magnetLevel);
+        PlayerPrefs.SetInt("AILevel", aiLevel);
         PlayerPrefs.Save();
     }
 
@@ -100,11 +201,13 @@ public class EconomyManager : MonoBehaviour
         if (PlayerPrefs.HasKey("BasePPS"))
             double.TryParse(PlayerPrefs.GetString("BasePPS"), out basePPS);
 
-        if (PlayerPrefs.HasKey("BaseUpgradeLevel"))
-            baseUpgradeLevel = PlayerPrefs.GetInt("BaseUpgradeLevel", 0);
-
-        if (PlayerPrefs.HasKey("FleetLevel"))
-            fleetLevel = PlayerPrefs.GetInt("FleetLevel", 0);
+        baseUpgradeLevel = PlayerPrefs.GetInt("BaseUpgradeLevel", 0);
+        collectorCount = PlayerPrefs.GetInt("CollectorCount", 0);
+        scannerLevel = PlayerPrefs.GetInt("ScannerLevel", 0);
+        thrusterLevel = PlayerPrefs.GetInt("ThrusterLevel", 0);
+        cargoLevel = PlayerPrefs.GetInt("CargoLevel", 0);
+        magnetLevel = PlayerPrefs.GetInt("MagnetLevel", 0);
+        aiLevel = PlayerPrefs.GetInt("AILevel", 0);
     }
 
     void OnApplicationQuit()

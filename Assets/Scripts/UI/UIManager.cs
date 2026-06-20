@@ -1,11 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class UIManager : MonoBehaviour
 {
-    [Header("Textos da HUD (Legacy)")]
-    public Text txtScrap;
-    public Text txtPPS;
+    [Header("Textos da HUD")]
+    public TextMeshProUGUI txtScrap;
+    public TextMeshProUGUI txtPPS;
 
     [Header("Painéis")]
     public GameObject painelUpgrades;
@@ -15,37 +16,53 @@ public class UIManager : MonoBehaviour
     public Sprite setaMenuFechado; // A sprite da seta normal
     public Sprite setaMenuAberto;  // A sprite da seta para baixo
 
-    [Header("Textos dos Upgrades")]
-    public Text txtBaseCost;
-    public Text txtBaseLevel;
-    public Text txtFleetCost;
-    public Text txtFleetLevel;
-
-    [Header("Botões dos Upgrades")]
+    [Header("Textos do Upgrade Base (Nave Mãe)")]
+    public TextMeshProUGUI txtBaseCost;
+    public TextMeshProUGUI txtBaseLevel;
     public Button btnBaseUpgrade;
-    public Button btnFleetUpgrade;
 
     void Update()
     {
         if (EconomyManager.Instance != null)
         {
-            // Atualiza HUD principal
-            txtScrap.text = EconomyManager.Instance.currentScrap.ToString("F0");
-            txtPPS.text = "+" + EconomyManager.Instance.scrapPerSecond.ToString("F1") + "/s";
+            // Atualiza HUD principal (com checagem de nulo defensiva)
+            if (txtScrap != null) txtScrap.text = EconomyManager.Instance.currentScrap.ToString("F0");
+            if (txtPPS != null) txtPPS.text = "+" + EconomyManager.Instance.scrapPerSecond.ToString("F1") + "/s";
 
-            // Atualiza UI de Upgrades
+            // Atualiza Upgrade Base (Nave Mãe)
             double baseCost = EconomyManager.Instance.GetBaseUpgradeCost();
-            double fleetCost = EconomyManager.Instance.GetFleetUpgradeCost();
-
-            if (txtBaseCost != null) txtBaseCost.text = baseCost.ToString("F0") + " Scrap";
-            if (txtBaseLevel != null) txtBaseLevel.text = "Lvl " + EconomyManager.Instance.baseUpgradeLevel;
-
-            if (txtFleetCost != null) txtFleetCost.text = fleetCost.ToString("F0") + " Scrap";
-            if (txtFleetLevel != null) txtFleetLevel.text = "Lvl " + EconomyManager.Instance.fleetLevel;
-
-            // Habilita/desabilita botões baseado na grana atual
-            if (btnBaseUpgrade != null) btnBaseUpgrade.interactable = EconomyManager.Instance.currentScrap >= baseCost;
-            if (btnFleetUpgrade != null) btnFleetUpgrade.interactable = EconomyManager.Instance.currentScrap >= fleetCost;
+            bool baseCanAfford = EconomyManager.Instance.currentScrap >= baseCost;
+            
+            Color baseTextColor;
+            if (baseCanAfford)
+            {
+                ColorUtility.TryParseHtmlString("#4C4C4C", out baseTextColor);
+            }
+            else
+            {
+                baseTextColor = new Color(0.9f, 0.3f, 0.3f);
+            }
+            
+            if (txtBaseCost != null) 
+            {
+                txtBaseCost.text = baseCost.ToString("F0") + " Scrap";
+                txtBaseCost.color = baseTextColor;
+            }
+            if (txtBaseLevel != null) 
+            {
+                txtBaseLevel.text = "Lvl " + EconomyManager.Instance.baseUpgradeLevel;
+                txtBaseLevel.color = baseTextColor;
+            }
+            
+            if (btnBaseUpgrade != null) 
+            {
+                btnBaseUpgrade.interactable = baseCanAfford;
+                Image btnImage = btnBaseUpgrade.GetComponent<Image>();
+                if (btnImage != null)
+                {
+                    btnImage.color = baseCanAfford ? Color.white : new Color(0.4f, 0.4f, 0.4f, 0.6f);
+                }
+            }
         }
     }
 
@@ -64,19 +81,10 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    // --- MÉTODOS DE COMPRA GLOBAL ---
+
     public void PurchaseBaseUpgrade()
     {
-        if (EconomyManager.Instance != null)
-        {
-            EconomyManager.Instance.BuyBaseUpgrade();
-        }
-    }
-
-    public void PurchaseFleetUpgrade()
-    {
-        if (EconomyManager.Instance != null)
-        {
-            EconomyManager.Instance.BuyFleetUpgrade();
-        }
+        if (EconomyManager.Instance != null) EconomyManager.Instance.BuyBaseUpgrade();
     }
 }
