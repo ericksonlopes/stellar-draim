@@ -6,7 +6,7 @@ public class FleetVisualManager : MonoBehaviour
     [Header("Configurações da Frota")]
     public GameObject collectorShipPrefab;
     public Transform motherShip;
-    public float shipSpeed = 2.5f;
+    public float shipSpeed = 0.3f;
 
     private List<CollectorShip> activeShips = new List<CollectorShip>();
 
