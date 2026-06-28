@@ -3,6 +3,8 @@ using UnityEngine.EventSystems;
 
 public class DragByShip : MonoBehaviour
 {
+    [SerializeField] private float sizeMultiplier = 1.3f;
+
     private Camera mainCamera;
     private Vector3 offset;
     private bool isDragging = false;
@@ -10,6 +12,7 @@ public class DragByShip : MonoBehaviour
     private void Start()
     {
         mainCamera = Camera.main;
+        transform.localScale *= sizeMultiplier;
         LoadPosition();
     }
 

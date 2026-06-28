@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class CollectorShip : MonoBehaviour
 {
+    [SerializeField] private float sizeMultiplier = 1.3f;
+
     private Transform motherShip;
     private float speed = 0.3f; // Reduzida a velocidade padrão de 1f para 0.3f
     private Vector2 targetPosition;
@@ -21,6 +23,7 @@ public class CollectorShip : MonoBehaviour
         motherShip = motherShipTransform;
         speed = shipSpeed;
         transform.position = motherShip.position;
+        transform.localScale *= sizeMultiplier; // Aumenta o tamanho das sondas
         orbitAngle = Random.Range(0f, Mathf.PI * 2f); // Inicializa com ângulo aleatório
         SetRandomTarget();
     }
@@ -111,16 +114,27 @@ public class CollectorShip : MonoBehaviour
                     // Calcula posição orbital ao redor da nave-mãe
                     Vector2 orbitTarget = (Vector2)motherShip.position + new Vector2(Mathf.Cos(orbitAngle), Mathf.Sin(orbitAngle)) * orbitRadius;
                     
-                    // Alvo de mira combinado com força de separação
-                    Vector2 finalTarget = orbitTarget;
+                    // Move suavemente em direção à posição orbital (com desvio de separação)
+                    Vector2 desiredDir = (orbitTarget - (Vector2)transform.position);
+                    float distToOrbit = desiredDir.magnitude;
+                    Vector2 moveDir = desiredDir.normalized;
+                    
                     if (neighborCount > 0)
                     {
-                        finalTarget += separationForce * 0.3f;
+                        moveDir = (moveDir + separationForce * 0.7f).normalized;
                     }
                     
-                    LookAt(finalTarget);
-                    // Move sempre para a FRENTE (sem dar ré)
-                    transform.position += transform.up * currentSpeed * Time.deltaTime;
+                    Vector3 movement = (Vector3)(moveDir * currentSpeed * Time.deltaTime);
+                    if (movement.magnitude > distToOrbit)
+                    {
+                        transform.position = orbitTarget;
+                    }
+                    else
+                    {
+                        transform.position += movement;
+                    }
+                    
+                    LookAt((Vector2)transform.position + moveDir);
                 }
                 break;
 
@@ -131,16 +145,29 @@ public class CollectorShip : MonoBehaviour
                 // Alvo temporário ondulado (onda senoidal)
                 Vector2 tempTargetOut = (Vector2)targetPosition + perpOut * Mathf.Sin(Time.time * 4f) * 0.5f;
 
-                // Alvo de mira combinado com força de separação
-                Vector2 finalTargetOut = tempTargetOut;
+                // Direção desejada para o alvo temporário
+                Vector2 desiredDirOut = (tempTargetOut - (Vector2)transform.position);
+                float distToTargetOut = desiredDirOut.magnitude;
+                Vector2 moveDirOut = desiredDirOut.normalized;
+
+                // Combina com a força de separação (peso de 0.7f para desvio eficaz)
                 if (neighborCount > 0)
                 {
-                    finalTargetOut += separationForce * 0.3f;
+                    moveDirOut = (moveDirOut + separationForce * 0.7f).normalized;
                 }
 
-                LookAt(finalTargetOut);
-                // Move sempre para a FRENTE (sem dar ré)
-                transform.position += transform.up * currentSpeed * Time.deltaTime;
+                // Move usando a direção final
+                Vector3 movementOut = (Vector3)(moveDirOut * currentSpeed * Time.deltaTime);
+                if (movementOut.magnitude > distToTargetOut)
+                {
+                    transform.position = tempTargetOut;
+                }
+                else
+                {
+                    transform.position += movementOut;
+                }
+
+                LookAt((Vector2)transform.position + moveDirOut);
 
                 if (Vector2.Distance(transform.position, targetPosition) < 0.25f)
                 {
@@ -170,16 +197,29 @@ public class CollectorShip : MonoBehaviour
                 Vector2 perpRet = new Vector2(-dirRet.y, dirRet.x);
                 Vector2 tempTargetRet = (Vector2)motherShip.position + perpRet * Mathf.Sin(Time.time * 4f) * 0.5f;
 
-                // Alvo de mira combinado com força de separação
-                Vector2 finalTargetRet = tempTargetRet;
+                // Direção desejada para a Nave-Mãe ondulada
+                Vector2 desiredDirRet = (tempTargetRet - (Vector2)transform.position);
+                float distToTargetRet = desiredDirRet.magnitude;
+                Vector2 moveDirRet = desiredDirRet.normalized;
+
+                // Combina com a força de separação
                 if (neighborCount > 0)
                 {
-                    finalTargetRet += separationForce * 0.3f;
+                    moveDirRet = (moveDirRet + separationForce * 0.7f).normalized;
                 }
 
-                LookAt(finalTargetRet);
-                // Move sempre para a FRENTE (sem dar ré)
-                transform.position += transform.up * currentSpeed * Time.deltaTime;
+                // Move usando a direção final
+                Vector3 movementRet = (Vector3)(moveDirRet * currentSpeed * Time.deltaTime);
+                if (movementRet.magnitude > distToTargetRet)
+                {
+                    transform.position = tempTargetRet;
+                }
+                else
+                {
+                    transform.position += movementRet;
+                }
+
+                LookAt((Vector2)transform.position + moveDirRet);
 
                 if (Vector2.Distance(transform.position, motherShip.position) < 0.25f)
                 {
